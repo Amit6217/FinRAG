@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 from llama_index.core import Document
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.schema import TextNode
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from google import genai
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 
@@ -22,8 +22,7 @@ _bm25_nodes: Dict[str, List[TextNode]] = {}
 
 # ── Singletons ────────────────────────────────────────────────────────────────
 _qdrant_client: Optional[QdrantClient] = None
-_embed_model: Optional[HuggingFaceEmbedding] = None
-
+_genai_client: Optional[genai.Client] = None
 
 def get_qdrant_client() -> QdrantClient:
     global _qdrant_client
@@ -31,22 +30,21 @@ def get_qdrant_client() -> QdrantClient:
         _qdrant_client = QdrantClient(url=settings.QDRANT_URL)
     return _qdrant_client
 
-
-def get_embed_model() -> HuggingFaceEmbedding:
-    global _embed_model
-    if _embed_model is None:
-        _embed_model = HuggingFaceEmbedding(model_name=settings.EMBED_MODEL)
-    return _embed_model
+def get_genai_client() -> genai.Client:
+    global _genai_client
+    if _genai_client is None:
+        _genai_client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    return _genai_client
 
 
 def ensure_collection_exists(client: QdrantClient) -> None:
     """Create the Qdrant collection if it does not already exist."""
     existing = {c.name for c in client.get_collections().collections}
     if settings.QDRANT_COLLECTION not in existing:
-        # BAAI/bge-small-en-v1.5 produces 384-dimensional vectors
+        # gemini-embedding-2 produces 3072-dimensional vectors
         client.create_collection(
             collection_name=settings.QDRANT_COLLECTION,
-            vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+            vectors_config=VectorParams(size=3072, distance=Distance.COSINE),
         )
 
 
@@ -56,7 +54,7 @@ async def ingest_document(pdf_path: str, doc_name: str) -> Dict:
     1. Extract page text with pdfplumber
     2. Build LlamaIndex TextNodes with metadata
     3. Chunk with SentenceSplitter
-    4. Embed with BAAI/bge-small-en-v1.5
+    4. Embed with Google GenAI (gemini-embedding-2)
     5. Upsert vectors directly to Qdrant via qdrant-client
     6. Update the in-memory BM25 node store
     """
@@ -90,10 +88,19 @@ async def ingest_document(pdf_path: str, doc_name: str) -> Dict:
         digest = hashlib.md5(node.text.encode()).hexdigest()[:8]
         node.id_ = f"{doc_name}_{idx}_{digest}"
 
-    # ── 4. Embed ──────────────────────────────────────────────────────────────
-    embed_model = get_embed_model()
+    # ── 4. Embed (batched — Gemini API limits per-call content) ────────────────
+    genai_client = get_genai_client()
     texts = [n.get_content() for n in nodes]
-    embeddings = embed_model.get_text_embedding_batch(texts, show_progress=True)
+    
+    embeddings = []
+    embed_batch_size = 20
+    for i in range(0, len(texts), embed_batch_size):
+        batch = texts[i : i + embed_batch_size]
+        embed_response = genai_client.models.embed_content(
+            model=settings.EMBED_MODEL,
+            contents=batch,
+        )
+        embeddings.extend([e.values for e in embed_response.embeddings])
 
     # ── 5. Upsert to Qdrant ───────────────────────────────────────────────────
     client = get_qdrant_client()

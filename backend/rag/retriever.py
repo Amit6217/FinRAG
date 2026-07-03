@@ -11,7 +11,7 @@ from typing import List
 from rank_bm25 import BM25Okapi
 from llama_index.core.schema import NodeWithScore, TextNode
 
-from rag.indexer import get_all_bm25_nodes, get_embed_model, get_qdrant_client
+from rag.indexer import get_all_bm25_nodes, get_genai_client, get_qdrant_client
 from utils.config import settings
 
 
@@ -94,8 +94,12 @@ def _qdrant_vector_search(query: str, top_k: int) -> List[NodeWithScore]:
     Dense vector search via qdrant-client (ANN cosine similarity).
     Reconstructs NodeWithScore from Qdrant payload fields.
     """
-    embed_model  = get_embed_model()
-    query_vector = embed_model.get_query_embedding(query)
+    genai_client = get_genai_client()
+    embed_response = genai_client.models.embed_content(
+        model=settings.EMBED_MODEL,
+        contents=query,
+    )
+    query_vector = embed_response.embeddings[0].values
 
     client  = get_qdrant_client()
     results = client.query_points(

@@ -6,7 +6,6 @@ from typing import Any, Dict
 
 from google import genai
 
-from rag.reranker import rerank
 from rag.retriever import hybrid_retrieve
 from utils.config import settings
 
@@ -62,11 +61,8 @@ async def run_rag_pipeline(
         ),
     }
 
-    # ── Step 2: Cross-encoder reranking ──────────────────────────────────────
-    if use_reranking and retrieved_nodes:
-        final_nodes = rerank(query, retrieved_nodes, top_k=top_k)
-    else:
-        final_nodes = retrieved_nodes[:top_k]
+    # ── Step 2: Reranking disabled in lite branch ────────────────────────────
+    final_nodes = retrieved_nodes[:top_k]
 
     # ── Step 3: Build context string ──────────────────────────────────────────
     context_parts = []
