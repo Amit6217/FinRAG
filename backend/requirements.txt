@@ -8,8 +8,8 @@ llama-index-embeddings-huggingface>=0.5.0
 # Vector database — direct client (avoids llama-index-vector-stores-qdrant plugin)
 qdrant-client>=1.12.0
 
-# LLM — direct OpenAI SDK (avoids llama-index-llms-openai conflicts)
-openai>=1.40.0
+# LLM — direct Google GenAI SDK
+google-genai>=2.7.0
 
 # BM25 — pure Python, no compilation required
 rank-bm25>=0.2.2
@@ -32,3 +32,6 @@ pydantic>=2.8.2
 pydantic-settings>=2.3.4
 httpx>=0.27.0
 numpy>=2.0.0
+
+# Production Server
+gunicorn>=23.0.0

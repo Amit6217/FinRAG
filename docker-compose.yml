@@ -12,6 +12,8 @@ services:
     restart: unless-stopped
     environment:
       - QDRANT__LOG_LEVEL=INFO
+    networks:
+      - finrag-network
 
   mongodb:
     image: mongo:7
@@ -23,6 +25,62 @@ services:
     restart: unless-stopped
     environment:
       - MONGO_INITDB_DATABASE=financial_rag
+    networks:
+      - finrag-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: finrag_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+    restart: unless-stopped
+    networks:
+      - finrag-network
+    depends_on:
+      - qdrant
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: finrag_server
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./server/.env
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/financial_rag
+      - PORT=5000
+    restart: unless-stopped
+    networks:
+      - finrag-network
+    depends_on:
+      - mongodb
+      - backend
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: finrag_client
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    networks:
+      - finrag-network
+    depends_on:
+      - server
+
+networks:
+  finrag-network:
+    driver: bridge
 
 volumes:
   qdrant_storage:

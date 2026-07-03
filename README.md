@@ -22,7 +22,7 @@ Python FastAPI (:8000)
     ├── BM25Retriever (in-memory)
     ├── RRF Fusion
     ├── CrossEncoder reranker
-    └── OpenAI GPT-4o (answer generation)
+    └── Gemini 2.5 Flash (answer generation)
 ```
 
 ---
@@ -32,7 +32,7 @@ Python FastAPI (:8000)
 - Docker Desktop (running)
 - Python 3.10+
 - Node.js 18+
-- OpenAI API key
+- Gemini API key
 
 ---
 
@@ -52,7 +52,7 @@ pip install -r requirements.txt
 
 # Copy and edit .env
 copy .env.example .env
-# Set OPENAI_API_KEY in .env
+# Set GEMINI_API_KEY in .env
 
 uvicorn main:app --reload --port 8000
 ```
@@ -119,4 +119,14 @@ Open **http://localhost:3000**
 | Reranker | `ms-marco-MiniLM-L-6-v2` | Lightweight cross-encoder, great precision |
 | Fusion | Reciprocal Rank Fusion | Proven, parameter-free, robust |
 | Chunking | 512 tokens, 50 overlap | Balances context and retrieval precision |
-| LLM | GPT-4o | Best reasoning for financial analysis |
+| LLM | GPT-4o / Gemini | Best reasoning for financial analysis |
+
+---
+
+## Future Enhancements
+
+- **Persistent Document Storage**: Migrate the in-memory BM25 index to a persistent database (e.g., Elasticsearch or Redis) to support multi-worker scaling and retain search indexes across container restarts.
+- **Advanced Authentication**: Add secure login and authentication for users (e.g., JWT, OAuth2).
+- **Expanded Embedding Support**: Support for additional embedding models and dynamic selection via the UI.
+- **Enhanced Chat History**: User-specific chat histories and session persistence beyond local MongoDB caching.
+- **Automated CI/CD**: Implement automated tests and continuous deployment pipelines (e.g., GitHub Actions).

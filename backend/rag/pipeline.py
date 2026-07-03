@@ -1,11 +1,10 @@
 """
 Full RAG pipeline orchestration.
-Uses OpenAI SDK directly for answer generation (avoids llama-index-llms-openai
-version conflicts on Python 3.14).
+Uses Google GenAI SDK for answer generation.
 """
 from typing import Any, Dict
 
-from openai import OpenAI as OpenAIClient
+from google import genai
 
 from rag.reranker import rerank
 from rag.retriever import hybrid_retrieve
@@ -80,22 +79,21 @@ async def run_rag_pipeline(
         )
     context_str = "\n\n".join(context_parts)
 
-    # ── Step 4: Generate answer with Gemini (openai SDK) ─────────────────────
-    client   = OpenAIClient(
-        api_key=settings.GEMINI_API_KEY,
-        base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+    # ── Step 4: Generate answer with Gemini (google-genai SDK) ─────────────────────
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    
+    prompt = USER_TEMPLATE.format(context_str=context_str, query_str=query)
+    
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=prompt,
+        config=genai.types.GenerateContentConfig(
+            temperature=0.1,
+            max_output_tokens=1024,
+            system_instruction=SYSTEM_PROMPT
+        )
     )
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user",   "content": USER_TEMPLATE.format(context_str=context_str, query_str=query)},
-    ]
-    response = client.chat.completions.create(
-        model="gemini-1.5-flash",
-        messages=messages,
-        temperature=0.1,
-        max_tokens=1024,
-    )
-    answer = response.choices[0].message.content.strip()
+    answer = response.text.strip()
 
     # ── Step 5: Build structured citations ────────────────────────────────────
     citations = []

@@ -195,7 +195,7 @@ export default function ChatInterface() {
               10-K Analysis
             </h2>
             <p style={{ fontSize: '0.7rem', color: '#475569', margin: 0 }}>
-              Hybrid RAG · GPT-4o · Cross-Encoder Reranking
+              Hybrid RAG · Gemini 2.5 Flash · Cross-Encoder Reranking
             </p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', position: 'relative', alignItems: 'center' }}>
