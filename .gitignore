@@ -60,3 +60,6 @@ htmlcov/
 out/
 build/
 .vercel/
+
+#pdf
+*.pdf

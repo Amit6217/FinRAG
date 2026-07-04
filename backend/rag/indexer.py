@@ -92,15 +92,27 @@ async def ingest_document(pdf_path: str, doc_name: str) -> Dict:
     genai_client = get_genai_client()
     texts = [n.get_content() for n in nodes]
     
+    import asyncio
+    
     embeddings = []
     embed_batch_size = 20
     for i in range(0, len(texts), embed_batch_size):
         batch = texts[i : i + embed_batch_size]
-        embed_response = genai_client.models.embed_content(
-            model=settings.EMBED_MODEL,
-            contents=batch,
-        )
-        embeddings.extend([e.values for e in embed_response.embeddings])
+        for attempt in range(6):
+            try:
+                embed_response = genai_client.models.embed_content(
+                    model=settings.EMBED_MODEL,
+                    contents=batch,
+                )
+                embeddings.extend([e.values for e in embed_response.embeddings])
+                await asyncio.sleep(1.0) # Small spacing between batches
+                break
+            except Exception as e:
+                if attempt == 5:
+                    raise e
+                wait_time = (2 ** attempt) + 2
+                print(f"Embedding batch rate limit or error (attempt {attempt+1}/6), retrying in {wait_time}s... Error: {e}")
+                await asyncio.sleep(wait_time)
 
     # ── 5. Upsert to Qdrant ───────────────────────────────────────────────────
     client = get_qdrant_client()
