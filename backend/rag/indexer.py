@@ -27,7 +27,8 @@ _genai_client: Optional[genai.Client] = None
 def get_qdrant_client() -> QdrantClient:
     global _qdrant_client
     if _qdrant_client is None:
-        _qdrant_client = QdrantClient(url=settings.QDRANT_URL)
+        api_key = settings.QDRANT_API_KEY if settings.QDRANT_API_KEY else None
+        _qdrant_client = QdrantClient(url=settings.QDRANT_URL, api_key=api_key)
     return _qdrant_client
 
 def get_genai_client() -> genai.Client:
