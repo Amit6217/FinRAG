@@ -3,7 +3,7 @@ const axios        = require('axios');
 const router       = express.Router();
 const QueryHistory = require('../models/QueryHistory');
 
-const PYTHON_API = process.env.PYTHON_API_URL || 'http://localhost:8000';
+const PYTHON_API = (process.env.PYTHON_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 
 /**
  * POST /api/query

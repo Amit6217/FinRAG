@@ -5,7 +5,7 @@ const FormData = require('form-data');
 const path     = require('path');
 const router   = express.Router();
 
-const PYTHON_API = process.env.PYTHON_API_URL || 'http://localhost:8000';
+const PYTHON_API = (process.env.PYTHON_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 
 // Store uploads in memory (max 50 MB) and validate file type
 const upload = multer({

@@ -2,7 +2,7 @@ const express = require('express');
 const axios   = require('axios');
 const router  = express.Router();
 
-const PYTHON_API = process.env.PYTHON_API_URL || 'http://localhost:8000';
+const PYTHON_API = (process.env.PYTHON_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 
 /**
  * GET /api/documents
